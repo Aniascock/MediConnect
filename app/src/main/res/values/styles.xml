@@ -1,23 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Bottom Navigation Text Styles -->
 
-    <!-- Active (Selected) Text Style -->
+    <!-- ── Bottom Navigation Text Styles ── -->
     <style name="BottomNavTextActive" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textSize">12sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/primary_teal</item>
     </style>
 
-    <!-- Inactive (Unselected) Text Style -->
     <style name="BottomNavTextInactive" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textSize">11sp</item>
         <item name="android:textStyle">normal</item>
         <item name="android:textColor">@color/text_tertiary</item>
     </style>
 
-
     <style name="NoIndicator">
         <item name="android:color">@android:color/transparent</item>
     </style>
+
+    <!--
+        FieldLabel — small label above each input field.
+        Used in EditProfileActivity and HelpSupportActivity.
+    -->
+    <style name="FieldLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.04</item>
+        <item name="android:layout_marginBottom">4dp</item>
+    </style>
+
+    <!--
+        FieldInputLayout — Material TextInputLayout style for form fields.
+        Uses outline box with teal stroke when focused.
+    -->
+    <style name="FieldInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxBackgroundColor">@color/card_bg</item>
+        <item name="boxStrokeColor">@color/primary_teal</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxCornerRadiusTopStart">10dp</item>
+        <item name="boxCornerRadiusTopEnd">10dp</item>
+        <item name="boxCornerRadiusBottomStart">10dp</item>
+        <item name="boxCornerRadiusBottomEnd">10dp</item>
+        <item name="hintTextColor">@color/text_secondary</item>
+    </style>
+
 </resources>

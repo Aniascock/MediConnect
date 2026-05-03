@@ -9,7 +9,6 @@ import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,6 +25,9 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 public class ProfileFragment extends Fragment {
 
@@ -36,21 +38,17 @@ public class ProfileFragment extends Fragment {
     private TextView tvAvatarInitials, tvFullName, tvEmail;
     private TextView tvStatTotal, tvStatUpcoming, tvStatCompleted;
     private TextView tvPhone, tvDob, tvSex;
-    // ✅ Use View — works for both CardView and LinearLayout
-    private View infoSection;
-    private View cardStats;
-    private FrameLayout loadingOverlay;
+    private View     infoSection, cardStats, loadingOverlay;
     private TextView btnSystem, btnLight, btnDark;
 
     // ── Firebase ──────────────────────────────────────────────────────────────
-    private FirebaseAuth mAuth;
+    private FirebaseAuth      mAuth;
     private DatabaseReference usersRef;
-    private DatabaseReference appointmentsRef;
+    private FirebaseFirestore db;
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_profile, container, false);
     }
@@ -59,83 +57,94 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // ── Firebase ───────────────────────────────────────────────────────
-        mAuth           = FirebaseAuth.getInstance();
-        usersRef        = FirebaseDatabase.getInstance().getReference("Users");
-        appointmentsRef = FirebaseDatabase.getInstance().getReference("Appointments");
+        mAuth    = FirebaseAuth.getInstance();
+        usersRef = FirebaseDatabase.getInstance().getReference("Users");
+        db       = FirebaseFirestore.getInstance();
 
-        // ── Bind views ─────────────────────────────────────────────────────
-        tvAvatarInitials   = view.findViewById(R.id.tv_avatar_initials);
-        tvFullName         = view.findViewById(R.id.tv_full_name);
-        tvEmail            = view.findViewById(R.id.tv_email);
-        tvStatTotal        = view.findViewById(R.id.tv_stat_appointments);
-        tvStatUpcoming     = view.findViewById(R.id.tv_stat_doctors);
-        tvStatCompleted    = view.findViewById(R.id.tv_stat_reports);
-        tvPhone            = view.findViewById(R.id.tv_phone_value);
-        tvDob              = view.findViewById(R.id.tv_dob_value);
-        tvSex              = view.findViewById(R.id.tv_sex_value);
-        infoSection        = view.findViewById(R.id.info_section);
-        cardStats          = view.findViewById(R.id.card_stats);
-        loadingOverlay     = view.findViewById(R.id.loading_overlay);
+        // ── Bind ──────────────────────────────────────────────────────────────
+        tvAvatarInitials  = view.findViewById(R.id.tv_avatar_initials);
+        tvFullName        = view.findViewById(R.id.tv_full_name);
+        tvEmail           = view.findViewById(R.id.tv_email);
+        tvStatTotal       = view.findViewById(R.id.tv_stat_appointments);
+        tvStatUpcoming    = view.findViewById(R.id.tv_stat_doctors);
+        tvStatCompleted   = view.findViewById(R.id.tv_stat_reports);
+        tvPhone           = view.findViewById(R.id.tv_phone_value);
+        tvDob             = view.findViewById(R.id.tv_dob_value);
+        tvSex             = view.findViewById(R.id.tv_sex_value);
+        // Use View (not LinearLayout/CardView) to avoid ClassCastException
+        infoSection       = view.findViewById(R.id.info_section);
+        cardStats         = view.findViewById(R.id.card_stats);
+        loadingOverlay    = view.findViewById(R.id.loading_overlay);
 
-        // ── Dark mode toggle ───────────────────────────────────────────────
+        // ── Dark mode toggle ──────────────────────────────────────────────────
         btnSystem = view.findViewById(R.id.btn_mode_system);
         btnLight  = view.findViewById(R.id.btn_mode_light);
         btnDark   = view.findViewById(R.id.btn_mode_dark);
-
         refreshToggleUI(getSavedMode());
-
         btnSystem.setOnClickListener(v -> applyAndSaveMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM));
         btnLight.setOnClickListener( v -> applyAndSaveMode(AppCompatDelegate.MODE_NIGHT_NO));
         btnDark.setOnClickListener(  v -> applyAndSaveMode(AppCompatDelegate.MODE_NIGHT_YES));
 
-        // ── Row click listeners ────────────────────────────────────────────
+        // ── Row: Edit Profile header button ───────────────────────────────────
         view.findViewById(R.id.btn_edit_profile_header)
-            .setOnClickListener(v -> toast("Edit Profile — coming soon"));
+            .setOnClickListener(v -> openEditProfile());
 
+        // ── Row: Edit Profile list row ────────────────────────────────────────
         view.findViewById(R.id.row_edit_profile)
-            .setOnClickListener(v -> toast("Edit Profile — coming soon"));
+            .setOnClickListener(v -> openEditProfile());
 
+        // ── Row: Change Password ──────────────────────────────────────────────
         view.findViewById(R.id.row_change_password)
             .setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), dialog_change_password.class)));
 
+        // ── Row: Help & Support ───────────────────────────────────────────────
         view.findViewById(R.id.row_help)
-            .setOnClickListener(v -> toast("Help & Support — coming soon"));
+            .setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), HelpSupportActivity.class)));
 
+        // ── Row: Privacy Policy ───────────────────────────────────────────────
         view.findViewById(R.id.row_privacy)
-            .setOnClickListener(v -> toast("Privacy Policy — coming soon"));
+            .setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), PrivacyPolicyActivity.class)));
 
-        // ── Log out ────────────────────────────────────────────────────────
-        view.findViewById(R.id.btn_logout).setOnClickListener(v -> signOut());
+        // ── Log out ───────────────────────────────────────────────────────────
+        view.findViewById(R.id.btn_logout)
+            .setOnClickListener(v -> signOut());
 
-        // ── Load data ──────────────────────────────────────────────────────
+        // ── Load data ─────────────────────────────────────────────────────────
         loadUserProfile();
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Sign out — safe: runs navigation AFTER the current frame
-    // ─────────────────────────────────────────────────────────────────────────
+    // Refresh profile data when returning from EditProfile
+    @Override
+    public void onResume() {
+        super.onResume();
+        loadUserProfile();
+    }
+
+    // ── Open EditProfileActivity ──────────────────────────────────────────────
+
+    private void openEditProfile() {
+        startActivity(new Intent(requireContext(), EditProfileActivity.class));
+    }
+
+    // ── Sign out ──────────────────────────────────────────────────────────────
 
     private void signOut() {
         mAuth.signOut();
-        // Post to main thread so we're not inside an active layout pass
         new Handler(Looper.getMainLooper()).post(() -> {
             if (!isAdded()) return;
-            Intent intent = new Intent(requireContext(), Login.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
+            Intent i = new Intent(requireContext(), Login.class);
+            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(i);
         });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Firebase — load profile
-    // ─────────────────────────────────────────────────────────────────────────
+    // ── Load user profile ─────────────────────────────────────────────────────
 
     private void loadUserProfile() {
         FirebaseUser currentUser = mAuth.getCurrentUser();
-
-        // ── Not logged in: redirect AFTER the fragment is fully attached ───
         if (currentUser == null) {
             new Handler(Looper.getMainLooper()).post(() -> {
                 if (!isAdded()) return;
@@ -149,7 +158,6 @@ public class ProfileFragment extends Fragment {
         showLoading(true);
         String uid = currentUser.getUid();
 
-        // Immediately fill email from Auth (fast, no network needed)
         String authEmail = currentUser.getEmail();
         if (tvEmail != null && authEmail != null) tvEmail.setText(authEmail);
 
@@ -158,40 +166,30 @@ public class ProfileFragment extends Fragment {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (!isAdded()) return;
                 showLoading(false);
-
                 if (!snapshot.exists()) {
-                    // User node missing — show auth email at least
                     if (tvAvatarInitials != null) tvAvatarInitials.setText("?");
-                    if (tvFullName != null)       tvFullName.setText("Unknown User");
+                    if (tvFullName       != null) tvFullName.setText("Unknown User");
                     return;
                 }
-
                 User user = snapshot.getValue(User.class);
                 if (user == null) return;
 
-                // Name & initials
                 String first = user.firstName != null ? user.firstName.trim() : "";
                 String last  = user.lastName  != null ? user.lastName.trim()  : "";
                 String full  = (first + " " + last).trim();
                 if (full.isEmpty()) full = "Unknown User";
 
                 if (tvAvatarInitials != null) tvAvatarInitials.setText(getInitials(first, last));
-                if (tvFullName != null)       tvFullName.setText(full);
-
-                // Email — prefer Auth, fall back to DB value
+                if (tvFullName       != null) tvFullName.setText(full);
                 if (tvEmail != null) {
                     String email = (authEmail != null && !authEmail.isEmpty())
-                            ? authEmail
-                            : (user.email != null ? user.email : "");
+                            ? authEmail : (user.email != null ? user.email : "");
                     tvEmail.setText(email);
                 }
-
-                // Personal info fields
                 if (tvPhone != null) tvPhone.setText(notEmpty(user.phone));
                 if (tvDob   != null) tvDob.setText(notEmpty(user.dob));
                 if (tvSex   != null) tvSex.setText(notEmpty(user.sex));
 
-                // Reveal the info + stats cards
                 if (infoSection != null) infoSection.setVisibility(View.VISIBLE);
                 if (cardStats   != null) cardStats.setVisibility(View.VISIBLE);
 
@@ -202,41 +200,33 @@ public class ProfileFragment extends Fragment {
             public void onCancelled(@NonNull DatabaseError error) {
                 if (!isAdded()) return;
                 showLoading(false);
-                toast("Could not load profile — check your connection");
+                toast("Could not load profile");
             }
         });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Firebase — appointment stats
-    // ─────────────────────────────────────────────────────────────────────────
-
     private void loadAppointmentStats(String uid) {
-        appointmentsRef.orderByChild("patientId").equalTo(uid)
-            .addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    if (!isAdded()) return;
-                    int total = 0, upcoming = 0, completed = 0;
-                    for (DataSnapshot appt : snapshot.getChildren()) {
-                        total++;
-                        String status = appt.child("status").getValue(String.class);
-                        if (status == null) continue;
-                        if (status.equalsIgnoreCase("confirmed")
-                                || status.equalsIgnoreCase("pending")) upcoming++;
-                        else if (status.equalsIgnoreCase("completed")) completed++;
-                    }
-                    if (tvStatTotal     != null) tvStatTotal.setText(String.valueOf(total));
-                    if (tvStatUpcoming  != null) tvStatUpcoming.setText(String.valueOf(upcoming));
-                    if (tvStatCompleted != null) tvStatCompleted.setText(String.valueOf(completed));
+        db.collection("appointments")
+            .whereEqualTo("patientId", uid)
+            .get()
+            .addOnSuccessListener(snapshots -> {
+                if (!isAdded()) return;
+                int total = 0, upcoming = 0, completed = 0;
+                for (QueryDocumentSnapshot doc : snapshots) {
+                    total++;
+                    String status = doc.getString("status");
+                    if (status == null) continue;
+                    if (status.equalsIgnoreCase("confirmed")
+                            || status.equalsIgnoreCase("pending")) upcoming++;
+                    else if (status.equalsIgnoreCase("completed")) completed++;
                 }
-                @Override public void onCancelled(@NonNull DatabaseError e) { /* silent */ }
+                if (tvStatTotal     != null) tvStatTotal.setText(String.valueOf(total));
+                if (tvStatUpcoming  != null) tvStatUpcoming.setText(String.valueOf(upcoming));
+                if (tvStatCompleted != null) tvStatCompleted.setText(String.valueOf(completed));
             });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Dark mode
-    // ─────────────────────────────────────────────────────────────────────────
+    // ── Dark mode ─────────────────────────────────────────────────────────────
 
     private void applyAndSaveMode(int mode) {
         requireContext()
@@ -279,17 +269,13 @@ public class ProfileFragment extends Fragment {
         btn.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Helpers
-    // ─────────────────────────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private void showLoading(boolean loading) {
         if (loadingOverlay != null)
             loadingOverlay.setVisibility(loading ? View.VISIBLE : View.GONE);
-        if (infoSection != null && loading)
-            infoSection.setVisibility(View.GONE);
-        if (cardStats != null && loading)
-            cardStats.setVisibility(View.GONE);
+        if (infoSection != null && loading) infoSection.setVisibility(View.GONE);
+        if (cardStats   != null && loading) cardStats.setVisibility(View.GONE);
     }
 
     private String getInitials(String first, String last) {
@@ -299,7 +285,6 @@ public class ProfileFragment extends Fragment {
         return sb.length() > 0 ? sb.toString() : "?";
     }
 
-    /** Returns the value if non-null/non-empty, otherwise "—" */
     private String notEmpty(String val) {
         return (val != null && !val.trim().isEmpty()) ? val.trim() : "—";
     }
@@ -308,7 +293,11 @@ public class ProfileFragment extends Fragment {
         return dp * requireContext().getResources().getDisplayMetrics().density;
     }
 
+    private Toast mToast;
     private void toast(String msg) {
-        if (isAdded()) Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
+        if (!isAdded()) return;
+        if (mToast != null) mToast.cancel();
+        mToast = Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT);
+        mToast.show();
     }
 }

@@ -6,6 +6,14 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!--
+        Required for profile photo picker on Android 13+ (API 33+).
+        On older devices READ_EXTERNAL_STORAGE covers it — both are listed here.
+    -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
     <application
         android:name=".MediConnectApp"
         android:allowBackup="true"
@@ -16,57 +24,48 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MediConnect">
+
+        <!-- ── Existing activities ── -->
+        <activity android:name=".dialog_change_password" android:exported="false" />
+        <activity android:name=".DoctorPersonalProfile"  android:exported="false" />
+        <activity android:name=".PatientListActivity"    android:exported="false" />
+        <activity android:name=".PatientList"            android:exported="false" />
+        <activity android:name=".ScheduleActivity"       android:exported="false" />
+        <activity android:name=".AppointmentDetailActivity" android:exported="false" />
+        <activity android:name=".Consultation_Schedule"  android:exported="false" />
+        <activity android:name=".DoctorProfileActivity"  android:exported="false" />
+        <activity android:name=".DashboardActivity"      android:exported="false" />
+        <activity android:name=".AiMedicalActivity"      android:exported="false" />
+        <activity android:name=".Doctor_Dashboard"       android:exported="false" />
+        <activity android:name=".FindNearbyActivity"     android:exported="false" />
+        <activity android:name=".Login"                  android:exported="false" />
+        <activity android:name=".Register"               android:exported="false" />
+
+        <!-- ── NEW: Three feature activities ── -->
         <activity
-            android:name=".dialog_change_password"
-            android:exported="false" />
+            android:name=".EditProfileActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <activity
-            android:name=".DoctorPersonalProfile"
-            android:exported="false" />
+            android:name=".HelpSupportActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <activity
-            android:name=".PatientListActivity"
+            android:name=".PrivacyPolicyActivity"
             android:exported="false" />
-        <activity
-            android:name=".PatientList"
-            android:exported="false" />
-        <activity
-            android:name=".ScheduleActivity"
-            android:exported="false" />
-        <activity
-            android:name=".AppointmentDetailActivity"
-            android:exported="false" />
-        <activity
-            android:name=".Consultation_Schedule"
-            android:exported="false" />
-        <activity
-            android:name=".DoctorProfileActivity"
-            android:exported="false" />
-        <activity
-            android:name=".DashboardActivity"
-            android:exported="false" />
-        <activity
-            android:name=".AiMedicalActivity"
-            android:exported="false" />
-        <activity
-            android:name=".Doctor_Dashboard"
-            android:exported="false" />
-        <activity
-            android:name=".FindNearbyActivity"
-            android:exported="false" />
-        <activity
-            android:name=".Login"
-            android:exported="false" />
-        <activity
-            android:name=".Register"
-            android:exported="false" />
+
+        <!-- ── Launcher ── -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
     </application>
 
 </manifest>

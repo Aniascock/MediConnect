@@ -17,7 +17,7 @@ public class AppointmentDetailActivity extends AppCompatActivity {
     private TextView tvDoctorName, tvSpecialty, tvHospital, tvDate, tvTime;
     private TextView tvType, tvStatus, tvNotes, tvDoctorInitials;
     private View     statusIndicator;
-    private MaterialButton cancelButton, rescheduleButton, joinCallButton;
+    private MaterialButton cancelButton, rescheduleButton;
     private View     actionButtonsContainer;
 
     private String appointmentId, currentStatus;
@@ -58,7 +58,7 @@ public class AppointmentDetailActivity extends AppCompatActivity {
         tvNotes               = findViewById(R.id.detail_notes);
         cancelButton          = findViewById(R.id.cancel_button);
         rescheduleButton      = findViewById(R.id.reschedule_button);
-        joinCallButton        = findViewById(R.id.join_call_button);
+
         actionButtonsContainer= findViewById(R.id.action_buttons_container);
 
         // Back button
@@ -120,25 +120,24 @@ public class AppointmentDetailActivity extends AppCompatActivity {
                 rescheduleButton.setVisibility(View.VISIBLE);
                 boolean isVideo = type != null &&
                         (type.toLowerCase().contains("video") || type.toLowerCase().contains("online"));
-                joinCallButton.setVisibility(isVideo ? View.VISIBLE : View.GONE);
+
                 break;
             case "completed":
                 actionButtonsContainer.setVisibility(View.GONE);
-                joinCallButton.setVisibility(View.GONE);
+
                 break;
             case "cancelled":
                 actionButtonsContainer.setVisibility(View.VISIBLE);
                 cancelButton.setVisibility(View.GONE);
                 rescheduleButton.setVisibility(View.VISIBLE);
-                joinCallButton.setVisibility(View.GONE);
+
                 break;
         }
 
         cancelButton.setOnClickListener(v -> confirmCancel());
         rescheduleButton.setOnClickListener(v ->
                 Toast.makeText(this, "Reschedule — coming soon", Toast.LENGTH_SHORT).show());
-        joinCallButton.setOnClickListener(v ->
-                Toast.makeText(this, "Joining video call…", Toast.LENGTH_SHORT).show());
+
     }
 
     private void confirmCancel() {
@@ -161,7 +160,7 @@ public class AppointmentDetailActivity extends AppCompatActivity {
                     statusIndicator.setBackgroundResource(R.drawable.bg_status_busy);
                     actionButtonsContainer.setVisibility(View.VISIBLE);
                     cancelButton.setVisibility(View.GONE);
-                    joinCallButton.setVisibility(View.GONE);
+
                     Toast.makeText(this, "Appointment cancelled", Toast.LENGTH_SHORT).show();
                 })
                 .addOnFailureListener(e ->
