@@ -36,8 +36,8 @@ import java.util.Set;
 
 public class Doctor_Dashboard extends AppCompatActivity {
 
-    private static final long   ZEGO_APP_ID   = 503023280L;
-    private static final String ZEGO_APP_SIGN = "bdfa45fc67d54e89dbfd857cf20ca18091269a18d28367e25f98bc84d214f5ef";
+    private static final long   ZEGO_APP_ID   = 1986084612;
+    private static final String ZEGO_APP_SIGN = "33bce858e0d1f726dc8ffbcfa2e7fea78120215f59c63b8cb6b281ce9d1e1adc";
 
     // ── Views ──────────────────────────────────────────────────────────────────
     private TextView tvDoctorName;
