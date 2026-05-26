@@ -56,7 +56,7 @@
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:text="Past"
+                android:text="Pending"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:clickable="true"
@@ -137,6 +137,17 @@
             android:paddingTop="16dp"
             android:paddingBottom="80dp"
             android:clipToPadding="false" />
+
+        <Button
+            android:id="@+id/btn_clear_cancelled"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="16dp"
+            android:text="Clear History"
+            android:backgroundTint="@color/primary_teal"
+            android:textColor="@color/white"
+            android:visibility="gone" />
 
     </FrameLayout>
 

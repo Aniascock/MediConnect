@@ -6,8 +6,10 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -34,6 +36,8 @@ public class AppointmentsFragment extends Fragment {
     private View loadingSpinner;
     private LinearLayout emptyStateContainer;
     private TextView tvEmptyTitle, tvEmptySub;
+
+    private Button btnClearCancelled;
 
     // ── Data ───────────────────────────────────────────────────────────────────
     private AppointmentsAdapter adapter;
@@ -67,6 +71,7 @@ public class AppointmentsFragment extends Fragment {
         emptyStateContainer= view.findViewById(R.id.empty_state_container);
         tvEmptyTitle       = view.findViewById(R.id.empty_state_text);
         tvEmptySub         = view.findViewById(R.id.empty_state_sub);
+        btnClearCancelled = view.findViewById(R.id.btn_clear_cancelled);
     }
 
     // ── Custom segmented tab logic ─────────────────────────────────────────────
@@ -78,8 +83,9 @@ public class AppointmentsFragment extends Fragment {
         setTabInactive(tabCancelled);
 
         tabUpcoming.setOnClickListener(v -> selectTab("upcoming"));
-        tabPast.setOnClickListener(    v -> selectTab("past"));
+        tabPast.setOnClickListener(    v -> selectTab("pending"));
         tabCancelled.setOnClickListener(v -> selectTab("cancelled"));
+        btnClearCancelled.setOnClickListener(v -> confirmAndClearCancelled());
     }
 
     private void selectTab(String filter) {
@@ -90,9 +96,15 @@ public class AppointmentsFragment extends Fragment {
 
         switch (filter) {
             case "upcoming":  setTabActive(tabUpcoming);  break;
-            case "past":      setTabActive(tabPast);      break;
+            case "pending":   setTabActive(tabPast);      break;
             case "cancelled": setTabActive(tabCancelled); break;
         }
+
+        // Show clear button only on cancelled tab
+        btnClearCancelled.setVisibility(
+                "cancelled".equals(filter) ? View.VISIBLE : View.GONE
+        );
+
         loadAppointments();
     }
 
@@ -160,10 +172,12 @@ public class AppointmentsFragment extends Fragment {
                     boolean add = false;
                     switch (currentFilter) {
                         case "upcoming":
-                            add = appt.isUpcoming();
+                            add = appt.isUpcoming()
+                                    && "confirmed".equalsIgnoreCase(appt.getStatus());
                             break;
-                        case "past":
-                            add = !appt.isUpcoming()
+                        case "pending":
+                            add = appt.isUpcoming()
+                                    && !"confirmed".equalsIgnoreCase(appt.getStatus())
                                     && !"cancelled".equalsIgnoreCase(appt.getStatus());
                             break;
                         case "cancelled":
@@ -237,7 +251,7 @@ public class AppointmentsFragment extends Fragment {
                 tvEmptyTitle.setText("No upcoming appointments");
                 tvEmptySub.setText("Book a doctor to get started");
                 break;
-            case "past":
+            case "pending":
                 tvEmptyTitle.setText("No past appointments");
                 tvEmptySub.setText("Your completed visits will appear here");
                 break;
@@ -246,5 +260,55 @@ public class AppointmentsFragment extends Fragment {
                 tvEmptySub.setText("You have no cancelled bookings");
                 break;
         }
+    }
+
+    private void confirmAndClearCancelled() {
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Clear Cancelled History")
+                .setMessage("Are you sure you want to delete all cancelled appointments? This cannot be undone.")
+                .setPositiveButton("Delete All", (dialog, which) -> clearCancelledAppointments())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void clearCancelledAppointments() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) return;
+
+        showLoading();
+
+        db.collection("appointments")
+                .whereEqualTo("patientId", user.getUid())
+                .whereEqualTo("status", "cancelled")
+                .get()
+                .addOnSuccessListener(snapshots -> {
+                    if (snapshots.isEmpty()) { showEmpty(); return; }
+
+                    // Batch delete for efficiency
+                    com.google.firebase.firestore.WriteBatch batch = db.batch();
+                    for (QueryDocumentSnapshot doc : snapshots) {
+                        batch.delete(doc.getReference());
+                    }
+
+                    batch.commit()
+                            .addOnSuccessListener(aVoid -> {
+                                if (!isAdded()) return;
+                                appointmentList.clear();
+                                adapter.notifyDataSetChanged();
+                                showEmpty();
+                            })
+                            .addOnFailureListener(e -> {
+                                if (!isAdded()) return;
+                                hideLoading();
+                                android.widget.Toast.makeText(getContext(),
+                                        "Failed to clear history", Toast.LENGTH_SHORT).show();
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    if (!isAdded()) return;
+                    hideLoading();
+                    android.widget.Toast.makeText(getContext(),
+                            "Failed to fetch cancelled appointments", Toast.LENGTH_SHORT).show();
+                });
     }
 }

@@ -64,12 +64,12 @@
                 android:id="@+id/tvEmpty"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="40dp"
                 android:text="🗓️ No consultations found"
                 android:textColor="#9E9E9E"
                 android:textSize="14sp"
-                android:gravity="center"
-                android:padding="40dp"
-                android:visibility="gone"/>
+                android:visibility="gone" />
 
         </LinearLayout>
     </ScrollView>

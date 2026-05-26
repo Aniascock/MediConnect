@@ -32,7 +32,7 @@ public class DoctorProfileActivity extends AppCompatActivity {
 
     private LinearLayout backButton;
     private TextView doctorName, doctorSpecialty, doctorHospital, doctorRating,
-            doctorExperience, doctorStatus, aboutText, availableSlotsLabel;
+            doctorExperience, doctorStatus, aboutText, availableSlotsLabel, month;
     private LinearLayout videoCallButton, inPersonButton;
     private CardView confirmButton;
     private View statusDot;
@@ -47,6 +47,7 @@ public class DoctorProfileActivity extends AppCompatActivity {
     private String consultationHoursRaw = "";
     private View lastSelectedDayView = null;
     private TextView lastSelectedTimeView = null;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,6 +75,11 @@ public class DoctorProfileActivity extends AppCompatActivity {
         calendarContainer = findViewById(R.id.calendar_days_container);
         timeSlotsContainer = findViewById(R.id.time_slots_container);
         availableSlotsLabel = findViewById(R.id.available_slots_label); // add this id to your XML TextView
+        month = findViewById(R.id.month);
+
+// Set to current month on load
+        SimpleDateFormat monthYearFormat = new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
+        month.setText(monthYearFormat.format(Calendar.getInstance().getTime()));
     }
 
     private void loadDoctorDataFromFirebase() {
@@ -234,6 +240,10 @@ public class DoctorProfileActivity extends AppCompatActivity {
                     ((TextView) ((LinearLayout) v).getChildAt(0))
                             .setTextColor(ContextCompat.getColor(this, R.color.white));
                     lastSelectedDayView = v;
+
+                    // ✅ Update the month label with the selected day's month + year
+                    SimpleDateFormat monthYearFormat = new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
+                    month.setText(monthYearFormat.format(finalDay.getTime()));
 
                     if (availableSlotsLabel != null) {
                         availableSlotsLabel.setText("Available Slots - " + dateLabel);

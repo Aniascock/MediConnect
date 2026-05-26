@@ -104,6 +104,7 @@ public class Consultation_Schedule extends AppCompatActivity {
 
         db.collection("appointments")
                 .whereEqualTo("patientId", patientId)
+                .whereEqualTo("status", "confirmed")
                 .get()
                 .addOnSuccessListener(snapshots -> {
                     consultationContainer.removeAllViews();
@@ -185,12 +186,16 @@ public class Consultation_Schedule extends AppCompatActivity {
                 }
             } else if (isConsultationActive(date, time)) {
                 // Within the valid 1-hour window — show call button
-                btnVideoCall.setVisibility(View.VISIBLE);
+                btnVideoCall.setVisibility(View.GONE);
                 List<ZegoUIKitUser> invitees = new ArrayList<>();
                 invitees.add(new ZegoUIKitUser(doctorId, displayName));
                 btnVideoCall.setInvitees(invitees);
                 btnVideoCall.setIsVideoCall(true);
-                if (tvEnded != null) tvEnded.setVisibility(View.GONE);
+                if (tvEnded != null) {
+                    tvEnded.setText("Today");
+                    tvEnded.setTextColor(android.graphics.Color.parseColor("#1ABCD6"));
+                    tvEnded.setVisibility(View.VISIBLE);
+                }
             } else {
                 // Still in the future — show "Upcoming"
                 btnVideoCall.setVisibility(View.GONE);

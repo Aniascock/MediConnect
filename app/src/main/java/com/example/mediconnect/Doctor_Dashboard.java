@@ -170,7 +170,7 @@ public class Doctor_Dashboard extends AppCompatActivity {
 
         firestore.collection("appointments")
                 .whereEqualTo("doctorId", uid)
-                .whereEqualTo("date", todayDate)
+                //.whereEqualTo("date", todayDate)
                 .whereEqualTo("status", "confirmed")
                 .get()
                 .addOnSuccessListener(q -> tvAppointmentCount.setText(String.valueOf(q.size())))
